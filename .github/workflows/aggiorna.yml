@@ -1,0 +1,34 @@
+name: Aggiorna notizie
+
+on:
+  schedule:
+    # Orari UTC: in Italia circa alle 6, alle 12 e alle 18 (un'ora dopo con l'ora legale).
+    - cron: '0 5,11,17 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  aggiorna:
+    # Lo script usa Windows PowerShell 5.1, disponibile solo sui runner Windows.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scarica le notizie
+        shell: powershell
+        run: ./aggiorna.ps1
+
+      - name: Pubblica i dati aggiornati
+        shell: powershell
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data.js archivio.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m 'Aggiorna notizie'
+            git push
+          }
+          exit 0

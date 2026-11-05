@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rassegna Auto — le novità del giorno</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --paper: #f6f3ec;
+    --card: #fffdf8;
+    --ink: #1b1a17;
+    --muted: #666258;
+    --rule: #d9d4c7;
+    --accent: #b3261e;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141412;
+      --card: #1c1c19;
+      --ink: #ece8df;
+      --muted: #a09b8f;
+      --rule: #35332e;
+      --accent: #ff7a66;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 24px; }
+
+  .masthead { padding: 28px 0 18px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 32px; }
+  .masthead h1 { margin: 0; font: 700 clamp(2.4rem, 6vw, 4rem)/1 var(--serif); letter-spacing: -0.02em; }
+  .masthead p { margin: 0; color: var(--muted); font-size: .9rem; }
+  .masthead time { color: var(--ink); font-weight: 600; }
+
+  .stale { margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid var(--accent); background: var(--card); font-size: .92rem; }
+  .stale code { font-family: Consolas, monospace; font-size: .95em; }
+
+  .controls { position: sticky; top: 0; z-index: 5; background: var(--paper); border-block: 2px solid var(--ink); }
+  .controls .wrap { padding-block: 10px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .row { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .row::-webkit-scrollbar { display: none; }
+  .row.split { flex-wrap: wrap; overflow: visible; justify-content: space-between; gap: 8px 16px; }
+  .group { display: flex; gap: 6px; min-width: 0; max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+  .group::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: none; padding: 4px 11px; border: 1px solid transparent; border-radius: 3px; background: none;
+    color: var(--muted); font: 500 .87rem var(--sans); cursor: pointer; white-space: nowrap;
+  }
+  .chip:hover { color: var(--ink); border-color: var(--rule); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .chip small { font-size: .78em; opacity: .75; margin-left: 3px; font-variant-numeric: tabular-nums; }
+  .chip.day { font-weight: 600; }
+  input[type="search"] {
+    flex: 0 1 240px; min-width: 150px; padding: 4px 10px; border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--card); color: var(--ink); font: .87rem var(--sans);
+  }
+
+  main { padding: 24px 0 48px; }
+  .result-note { margin: 0 0 18px; color: var(--muted); font-size: .9rem; }
+
+  .lead { display: grid; grid-template-columns: 3fr 2fr; gap: 28px; align-items: center; padding-bottom: 26px; margin-bottom: 26px; border-bottom: 1px solid var(--rule); }
+  .lead h2 { margin: 6px 0 10px; font: 700 clamp(1.6rem, 3.2vw, 2.5rem)/1.12 var(--serif); letter-spacing: -0.01em; }
+  .lead .summary { font-size: 1.05rem; }
+  .lead:not(:has(figure)) { grid-template-columns: 1fr; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 32px 26px; }
+  .story h2 { margin: 5px 0 6px; font: 700 1.14rem/1.25 var(--serif); }
+  .story h2 a, .lead h2 a { text-decoration: none; }
+  .story h2 a:hover, .lead h2 a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  figure { margin: 0 0 10px; aspect-ratio: 16 / 9; overflow: hidden; background: var(--rule); }
+  .lead figure { margin: 0; }
+  figure img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .kicker { color: var(--accent); font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .summary { margin: 0 0 6px; font-size: .92rem; overflow-wrap: anywhere; }
+  .meta { margin: 0; color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
+  .lang { margin-left: 4px; padding: 0 4px; border: 1px solid var(--rule); border-radius: 2px; font-size: .68rem; }
+
+  .empty { padding: 56px 0; text-align: center; color: var(--muted); }
+  .empty button { margin-top: 10px; }
+  .more { display: block; margin: 36px auto 0; padding: 8px 22px; border: 1px solid var(--ink); border-radius: 3px; background: none; color: var(--ink); font: 500 .9rem var(--sans); cursor: pointer; }
+  .more:hover { background: var(--ink); color: var(--paper); }
+
+  footer { border-top: 1px solid var(--rule); padding: 20px 0 36px; color: var(--muted); font-size: .84rem; }
+  footer p { margin: 0 0 6px; }
+  .down { color: var(--accent); }
+
+  @media (max-width: 760px) {
+    .wrap { padding: 0 16px; }
+    .lead { grid-template-columns: 1fr; gap: 12px; }
+    .controls { position: static; }
+    input[type="search"] { flex: 1 1 100%; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <h1>Rassegna Auto</h1>
+    <p><time id="today"></time> · <span id="updated"></span></p>
+  </header>
+  <p class="stale" id="stale" hidden></p>
+</div>
+
+<nav class="controls" aria-label="Filtri notizie">
+  <div class="wrap">
+    <div class="row" id="days" role="group" aria-label="Giorno"></div>
+    <div class="row split">
+      <div class="group" id="cats" role="group" aria-label="Categoria"></div>
+      <div class="group" id="langs" role="group" aria-label="Lingua"></div>
+      <input type="search" id="search" placeholder="Cerca in tutto l'archivio…" aria-label="Cerca nelle notizie">
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <main id="main" aria-live="polite"></main>
+  <footer>
+    <p id="sources"></p>
+    <p>Titoli e brevi estratti provengono dai feed RSS delle testate: ogni articolo si legge sul sito originale. Le categorie sono assegnate in automatico dalle parole chiave, quindi possono essere imprecise.</p>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var PAGE_SIZE = 36;
+  var CATEGORIES = [
+    ['tutte', 'Tutte'],
+    ['modelli', 'Nuovi modelli'],
+    ['elettriche', 'Elettriche e ibride'],
+    ['prove', 'Prove'],
+    ['mercato', 'Mercato'],
+    ['sport', 'Motorsport'],
+    ['altro', 'Altre']
+  ];
+  var LANGUAGES = [['tutte', 'Tutte le fonti'], ['it', 'Italiane'], ['en', 'Estere']];
+  var CATEGORY_LABELS = {};
+  CATEGORIES.forEach(function (c) { CATEGORY_LABELS[c[0]] = c[1]; });
+
+  var data = window.RASSEGNA || { updated: null, sources: [], items: [] };
+  var items = data.items.map(function (item) {
+    var date = new Date(item.date);
+    return Object.assign({}, item, {
+      dateObj: date,
+      day: dayKey(date),
+      haystack: (item.title + ' ' + item.summary + ' ' + item.source).toLowerCase()
+    });
+  });
+
+  var todayKey = dayKey(new Date());
+  var days = unique(items.map(function (i) { return i.day; })).sort().reverse();
+  var state = {
+    day: days.indexOf(todayKey) !== -1 ? todayKey : days[0],
+    cat: 'tutte',
+    lang: 'tutte',
+    query: '',
+    shown: PAGE_SIZE
+  };
+
+  function dayKey(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function unique(list) {
+    return list.filter(function (v, i) { return list.indexOf(v) === i; });
+  }
+  function keyToDate(key) {
+    var p = key.split('-');
+    return new Date(+p[0], +p[1] - 1, +p[2]);
+  }
+  function dayLabel(key) {
+    if (key === todayKey) return 'Oggi';
+    var yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (key === dayKey(yesterday)) return 'Ieri';
+    return keyToDate(key).toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+  function timeLabel(d) {
+    return d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  }
+  function el(tag, props, children) {
+    var node = document.createElement(tag);
+    Object.keys(props || {}).forEach(function (k) {
+      if (k === 'text') node.textContent = props[k];
+      else if (k === 'class') node.className = props[k];
+      else node.setAttribute(k, props[k]);
+    });
+    (children || []).forEach(function (c) { if (c) node.appendChild(c); });
+    return node;
+  }
+
+  function matches(item, ignore) {
+    if (ignore !== 'cat' && state.cat !== 'tutte' && item.cat !== state.cat) return false;
+    if (state.lang !== 'tutte' && item.lang !== state.lang) return false;
+    if (state.query) return item.haystack.indexOf(state.query) !== -1;
+    return ignore === 'day' || item.day === state.day;
+  }
+
+  function chip(label, count, pressed, onClick, extraClass) {
+    var button = el('button', { type: 'button', class: 'chip' + (extraClass ? ' ' + extraClass : ''), 'aria-pressed': String(pressed), text: label });
+    if (count !== null) button.appendChild(el('small', { text: String(count) }));
+    button.addEventListener('click', onClick);
+    return button;
+  }
+
+  function update(change) {
+    Object.assign(state, change, { shown: PAGE_SIZE });
+    render();
+  }
+
+  function renderControls() {
+    var daysRow = document.getElementById('days');
+    daysRow.replaceChildren.apply(daysRow, days.map(function (key) {
+      var count = items.filter(function (i) { return i.day === key && matches(i, 'day'); }).length;
+      var pressed = !state.query && key === state.day;
+      return chip(dayLabel(key), count, pressed, function () { document.getElementById('search').value = ''; update({ day: key, query: '' }); }, 'day');
+    }));
+
+    var catsRow = document.getElementById('cats');
+    catsRow.replaceChildren.apply(catsRow, CATEGORIES.map(function (c) {
+      var count = items.filter(function (i) { return matches(i, 'cat') && (c[0] === 'tutte' || i.cat === c[0]); }).length;
+      return chip(c[1], count, state.cat === c[0], function () { update({ cat: c[0] }); });
+    }));
+
+    var langsRow = document.getElementById('langs');
+    langsRow.replaceChildren.apply(langsRow, LANGUAGES.map(function (l) {
+      return chip(l[1], null, state.lang === l[0], function () { update({ lang: l[0] }); });
+    }));
+  }
+
+  function storyParts(item) {
+    var when = state.query
+      ? item.dateObj.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) + ', ' + timeLabel(item.dateObj)
+      : timeLabel(item.dateObj);
+    var link = el('a', { href: item.link, target: '_blank', rel: 'noopener noreferrer', text: item.title });
+    var meta = el('p', { class: 'meta', text: item.source + ' · ' + when });
+    if (item.lang !== 'it') meta.appendChild(el('span', { class: 'lang', text: item.lang.toUpperCase() }));
+    return [
+      el('span', { class: 'kicker', text: CATEGORY_LABELS[item.cat] || 'Altre' }),
+      el('h2', {}, [link]),
+      item.summary ? el('p', { class: 'summary', text: item.summary }) : null,
+      meta
+    ];
+  }
+
+  function picture(item) {
+    if (!item.image) return null;
+    var img = el('img', { src: item.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' });
+    var figure = el('figure', {}, [img]);
+    img.addEventListener('error', function () { figure.remove(); });
+    return figure;
+  }
+
+  function renderStories(list) {
+    var main = document.getElementById('main');
+    main.replaceChildren();
+
+    if (state.query) {
+      main.appendChild(el('p', { class: 'result-note', text: list.length + (list.length === 1 ? ' risultato' : ' risultati') + ' negli ultimi 30 giorni' }));
+    }
+    if (!list.length) {
+      var reset = chip('Mostra tutte le notizie', null, false, function () {
+        document.getElementById('search').value = '';
+        update({ cat: 'tutte', lang: 'tutte', query: '' });
+      });
+      main.appendChild(el('div', { class: 'empty' }, [el('p', { text: items.length ? 'Nessuna notizia con questi filtri.' : 'Ancora nessuna notizia disponibile.' }), items.length ? reset : null]));
+      return;
+    }
+
+    var rest = list.slice();
+    // In apertura va la notizia italiana più recente con foto, altrimenti la più recente con foto.
+    if (!state.query) {
+      var withImage = function (i) { return i.image; };
+      var leadItem = rest.filter(function (i) { return i.image && i.lang === 'it'; })[0] || rest.filter(withImage)[0]
+        || rest.filter(function (i) { return i.lang === 'it'; })[0] || rest[0];
+      if (leadItem) {
+        rest.splice(rest.indexOf(leadItem), 1);
+        var figure = picture(leadItem);
+        var body = el('div', {}, storyParts(leadItem));
+        main.appendChild(el('article', { class: 'lead' }, [figure, body]));
+      }
+    }
+
+    var grid = el('div', { class: 'grid' });
+    rest.slice(0, state.shown).forEach(function (item) {
+      grid.appendChild(el('article', { class: 'story' }, [picture(item)].concat(storyParts(item))));
+    });
+    main.appendChild(grid);
+
+    if (rest.length > state.shown) {
+      var more = el('button', { type: 'button', class: 'more', text: 'Mostra altre ' + (rest.length - state.shown) });
+      more.addEventListener('click', function () {
+        state.shown += PAGE_SIZE;
+        renderStories(list);
+      });
+      main.appendChild(more);
+    }
+  }
+
+  function renderFooter() {
+    var node = document.getElementById('sources');
+    var parts = [document.createTextNode('Fonti: ')];
+    data.sources.forEach(function (s, i) {
+      if (i) parts.push(document.createTextNode(', '));
+      parts.push(s.ok ? document.createTextNode(s.name) : el('span', { class: 'down', text: s.name + ' (non raggiunta)' }));
+    });
+    node.replaceChildren.apply(node, parts);
+  }
+
+  function renderHeader() {
+    var now = new Date();
+    var today = document.getElementById('today');
+    today.textContent = now.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    today.dateTime = todayKey;
+
+    if (!data.updated) {
+      document.getElementById('updated').textContent = 'mai aggiornata';
+      return;
+    }
+    var updated = new Date(data.updated);
+    var isToday = dayKey(updated) === todayKey;
+    document.getElementById('updated').textContent = 'aggiornata ' + (isToday ? 'alle ' : 'il ' + updated.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' }) + ' alle ') + timeLabel(updated);
+    if (!isToday) {
+      var stale = document.getElementById('stale');
+      stale.hidden = false;
+      if (location.protocol !== 'file:') {
+        stale.textContent = 'Queste notizie non sono di oggi: la pagina mostra l’ultima edizione pubblicata.';
+      } else {
+        stale.replaceChildren(
+          document.createTextNode('Queste notizie non sono di oggi. Per scaricare le ultime fai doppio clic su '),
+          el('code', { text: 'aggiorna.bat' }),
+          document.createTextNode('.')
+        );
+      }
+    }
+  }
+
+  function render() {
+    renderControls();
+    renderStories(items.filter(function (i) { return matches(i); }));
+  }
+
+  document.getElementById('search').addEventListener('input', function (e) {
+    update({ query: e.target.value.trim().toLowerCase() });
+  });
+
+  renderHeader();
+  renderFooter();
+  render();
+})();
+</script>
+</body>
+</html>
